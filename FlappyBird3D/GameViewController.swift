@@ -31,7 +31,7 @@ class GameViewController: UIViewController {
         scnScene = BirdScene(create: true)
         scnView.scene = scnScene
         scnView.backgroundColor = #colorLiteral(red: 0.2588235438, green: 0.7568627596, blue: 0.9686274529, alpha: 1)
-//        scnView.allowsCameraControl = true
+        scnView.allowsCameraControl = true
 //        scnView.showsStatistics = true
 //        scnView.autoenablesDefaultLighting = true
     }
