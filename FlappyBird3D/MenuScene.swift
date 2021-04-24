@@ -1,13 +1,6 @@
-//
-//  BirdScene.swift
-//  FlappyBird3D
-//
-//  Created by Никита Комаров on 20.04.2021.
-//
-
 import SceneKit
 
-class BirdScene: SCNScene, SCNSceneRendererDelegate {
+class MenuScene: SCNScene, SCNSceneRendererDelegate {
     
     let emptyGrass = SCNNode()
     let emptyGrass2 = SCNNode()
@@ -16,37 +9,14 @@ class BirdScene: SCNScene, SCNSceneRendererDelegate {
     var timeLast: Double?
     let speedConstant = -0.7
     
-    var emptyPipe1 = SCNNode()
-    var emptyPipe2 = SCNNode()
-    var emptyPipe3 = SCNNode()
-    var emptyPipe4 = SCNNode()
-    
     let emptyBird = SCNNode()
     var bird = SCNNode()
-    
-    var rotationSeq = SCNAction()
-    
-    enum ColliderCategory: Int
-    {
-        case Bird = 1
-        case Pipe
-        case Ground
-    }
-    
     
     convenience init(create: Bool) {
         self.init()
         
-        let rotationAction1 = SCNAction.rotate(toAxisAngle: SCNVector4(1, 0, 0, 0.78), duration: 0.1)
-        let rotationAction2 = SCNAction.rotate(toAxisAngle: SCNVector4(1, 0, 0, -1.57), duration: 1)
-        rotationAction2.timingMode = .easeOut
-        
-        rotationSeq = SCNAction.sequence([rotationAction1, rotationAction2])
-        
         setupScenery()
         setupCamera()
-        
-        physicsWorld.gravity = SCNVector3(0, -5.0, 0)
         
         let propsScene = SCNScene(named: "art.scnassets/Props.dae")!
         emptyGrass.scale = SCNVector3(easyScale: 0.15)
@@ -67,70 +37,22 @@ class BirdScene: SCNScene, SCNSceneRendererDelegate {
         rootNode.addChildNode(emptyGrass)
         rootNode.addChildNode(emptyGrass2)
         
-        let bottomPipe = propsScene.rootNode.childNode(withName: "Pipe", recursively: true)!
-        let topPipe = bottomPipe.clone()
-        
-        topPipe.rotation = SCNVector4(0, 0, 1, Double.pi)
-        topPipe.position = SCNVector3(0, 13, 0)
-        
-        let emptyPipe = SCNNode()
-        emptyPipe.addChildNode(topPipe)
-        emptyPipe.addChildNode(bottomPipe)
-        emptyPipe.scale = SCNVector3(easyScale: 0.15)
-        emptyPipe.physicsBody = SCNPhysicsBody.kinematic()
-        emptyPipe.physicsBody!.categoryBitMask = ColliderCategory.Pipe.rawValue
-        
-        if #available(iOS 9.0, *)
-        {
-            emptyPipe.physicsBody!.contactTestBitMask = ColliderCategory.Bird.rawValue
-        } else {
-            emptyPipe.physicsBody!.collisionBitMask = ColliderCategory.Bird.rawValue
-        }
-        
-        emptyPipe1 = emptyPipe.clone()
-        emptyPipe1.position = SCNVector3(2, randomHeight(), 0)
-        emptyPipe1.physicsBody = emptyPipe.physicsBody?.copy() as? SCNPhysicsBody
-        
-        emptyPipe2 = emptyPipe.clone()
-        emptyPipe2.position = SCNVector3(3, randomHeight(), 0)
-        emptyPipe2.physicsBody = emptyPipe.physicsBody?.copy() as? SCNPhysicsBody
-        
-        emptyPipe3 = emptyPipe.clone()
-        emptyPipe3.position = SCNVector3(4, randomHeight(), 0)
-        emptyPipe3.physicsBody = emptyPipe.physicsBody?.copy() as? SCNPhysicsBody
-        
-        emptyPipe4 = emptyPipe.clone()
-        emptyPipe4.position = SCNVector3(5, randomHeight(), 0)
-        emptyPipe4.physicsBody = emptyPipe.physicsBody?.copy() as? SCNPhysicsBody
-        
-        rootNode.addChildNode(emptyPipe1)
-        rootNode.addChildNode(emptyPipe2)
-        rootNode.addChildNode(emptyPipe3)
-        rootNode.addChildNode(emptyPipe4)
-        
         let birdScene = SCNScene(named: "art.scnassets/FlappyBird.dae")!
         bird = birdScene.rootNode.childNode(withName: "Bird", recursively: true)!
         emptyBird.addChildNode(bird)
         emptyBird.scale = SCNVector3(easyScale: 0.08)
         emptyBird.rotation = SCNVector4(0, 1, 0, -1.57)
-        emptyBird.position = SCNVector3(-0.3, 0, 0)
+        emptyBird.position = SCNVector3(0, -0.4, 0)
         
-        let birdGeo = SCNSphere(radius: 0.05)
+        let upMove = SCNAction.move(by: SCNVector3(0, 0.2, 0), duration: 1)
+        upMove.timingMode = .easeInEaseOut
         
-        emptyBird.physicsBody = SCNPhysicsBody(type: .dynamic, shape: SCNPhysicsShape(geometry: birdGeo, options: nil))
-        emptyBird.physicsBody!.mass = 5
-        emptyBird.physicsBody!.velocityFactor = SCNVector3(1, 1, 0)
-        emptyBird.physicsBody!.angularVelocityFactor = SCNVector3Zero
-        emptyBird.physicsBody!.categoryBitMask = ColliderCategory.Bird.rawValue
+        let downMove = SCNAction.move(by: SCNVector3(0, -0.2, 0), duration: 1)
+        downMove.timingMode = .easeInEaseOut
         
-        if #available(iOS 9.0, *)
-        {
-            emptyBird.physicsBody!.contactTestBitMask = ColliderCategory.Ground.rawValue |
-                ColliderCategory.Pipe.rawValue
-        } else {
-            emptyBird.physicsBody!.collisionBitMask = ColliderCategory.Ground.rawValue |
-                ColliderCategory.Pipe.rawValue
-        }
+        let upDownSeq = SCNAction.sequence([upMove, downMove])
+        
+        emptyBird.runAction(SCNAction.repeatForever(upDownSeq))
         
         rootNode.addChildNode(emptyBird)
         
@@ -192,22 +114,6 @@ class BirdScene: SCNScene, SCNSceneRendererDelegate {
         emptyGround.position.y = -1.63
         rootNode.addChildNode(emptyGround)
         
-        let collideGround = SCNNode(geometry: groundGeom)
-        collideGround.opacity = 0
-        collideGround.physicsBody = SCNPhysicsBody.kinematic()
-        collideGround.physicsBody!.mass = 1000
-        
-        collideGround.physicsBody!.categoryBitMask = ColliderCategory.Ground.rawValue
-        
-        if #available(iOS 9.0, *)
-        {
-            collideGround.physicsBody!.contactTestBitMask = ColliderCategory.Bird.rawValue
-        } else {
-            collideGround.physicsBody!.collisionBitMask = ColliderCategory.Bird.rawValue
-            
-        }
-        collideGround.position.y = -1.36
-        rootNode.addChildNode(collideGround)
     }
     
     func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
@@ -226,10 +132,6 @@ class BirdScene: SCNScene, SCNSceneRendererDelegate {
         
         moveGrass(node: emptyGrass, deltaTime: deltaTime)
         moveGrass(node: emptyGrass2, deltaTime: deltaTime)
-        movePipe(node: emptyPipe1, deltaTime: deltaTime)
-        movePipe(node: emptyPipe2, deltaTime: deltaTime)
-        movePipe(node: emptyPipe3, deltaTime: deltaTime)
-        movePipe(node: emptyPipe4, deltaTime: deltaTime)
         
     }
     
@@ -263,14 +165,3 @@ class BirdScene: SCNScene, SCNSceneRendererDelegate {
 }
 
 
-
-extension SCNVector3
-{
-    init (easyScale: Float)
-    {
-        self.init()
-        self.x = easyScale
-        self.y = easyScale
-        self.z = easyScale
-    }
-}
